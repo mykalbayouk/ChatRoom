@@ -6,6 +6,9 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in serv_add; /* Local address */
     struct sockaddr_in client_add; /* Client address */
 
+
+    printf("==== Server started ====\n");
+
     if((serv_sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         perror("socket failed");
         return -1;
@@ -29,29 +32,40 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    unsigned int client_add_len = sizeof(client_add);
+    if ((client_sock = accept(serv_sock, (struct sockaddr *) &client_add, &client_add_len)) < 0) {
+        perror("accept failed");
+        return -1;
+    }
+
     while(1) {
-        // wait for a client to connect
-        if ((client_sock = accept(serv_sock, NULL, NULL)) < 0) {
-            perror("accept failed");
-            return -1;
-        }
-
         char message[50];
+        // wait for a client to connect
 
-        // recieve message from client
-        if (recv(client_sock, &message, sizeof(message), 0) < 0) {
-            perror("recieve failed");
+        
+
+        
+        pid_t pid = fork();
+        if (pid < 0) {
+            perror("fork failed");
             return -1;
-        }
-
+        } else if (pid == 0) {
+            close(serv_sock);
+            // recieve message            
+            if (recv(client_sock, &message, sizeof(message), 0) < 0) {
+                perror("recieve failed");
+                return -1;
+            }
+            exit(0);
+        } 
+        
         if (strcmp(message, "exit\n") == 0) {
             printf("client said: %s", message);
             break;
         }
 
-        printf("client said: %s", message);
-
-
+        printf("Client said: %s", message);
+        
     }
     close(serv_sock); 
     return 1;
