@@ -38,13 +38,16 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    while(1) {
-        char message[50];
+    int status = 1;
+    while(status) {        
+        char message[256];
         // wait for a client to connect
 
-        
+        if (client_sock < 0) {
+            perror("accept failed");
+            break;
+        }
 
-        
         pid_t pid = fork();
         if (pid < 0) {
             perror("fork failed");
@@ -56,19 +59,28 @@ int main(int argc, char *argv[]) {
                 perror("recieve failed");
                 return -1;
             }
-            exit(0);
+
+            if (strcmp(message, "exit\n") == 0) {
+                printf("Client said: %s", message);                
+                status = 0;                
+                exit(0);
+            } else {
+                printf("Client said: %s", message);                    
+                exit(0);
+            }
+        }
+        
+        pid = waitpid(-1, NULL, WNOHANG);
+        if (pid < 0) {
+            perror("waitpid failed");
+            return -1;
+        } else if (pid == 0) {
+            break;
         } 
         
-        if (strcmp(message, "exit\n") == 0) {
-            printf("client said: %s", message);
-            break;
-        }
-
-        printf("Client said: %s", message);
-        
     }
-    close(serv_sock); 
-    return 1;
+    close(serv_sock);
+    return 0;
 
 
 } // server.c
