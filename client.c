@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     memset(&serv_add, 0, sizeof(serv_add)); // zero out structure
     serv_add.sin_family = AF_INET; // address family
     serv_add.sin_addr.s_addr = htonl(INADDR_ANY); // server ip
-    serv_add.sin_port = htons(5002); // server port
+    serv_add.sin_port = htons(port_c); // server port
 
 
     // connect to server
@@ -33,6 +33,8 @@ int main(int argc, char *argv[]) {
             perror("send failed");
             return -1;
         }
+
+        
 
         if (strcmp(message, "exit\n") == 0) {
             printf("Goodbye\n");

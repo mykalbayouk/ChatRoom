@@ -8,4 +8,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#define port_c 8001
+
 #endif /*HEADER.h*/
