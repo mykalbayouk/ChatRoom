@@ -20,27 +20,42 @@ int main(int argc, char *argv[]) {
 
     // connect to server
     if (connect(sock, (struct sockaddr *) &serv_add, sizeof(serv_add)) < 0) {
-            perror("connect failed");
-            return -1;
-        }
+        perror("connect failed");
+        return -1;
+    }
+
+    pid_t pid;
     while (1) {
-        
-        printf("Enter message: ");
+
+         // receive message from server
+        printf("\n> ");
+        pid = fork();
+        if (pid < 0) {
+            perror("fork failed");
+            return -1;
+        } else if (pid == 0) {
+            while(1) {
+                char mem[256];
+                recv_msg(sock, mem);
+                printf("Server: %s\n", mem);
+
+            }            
+            exit(0);
+        }        
         fgets(message, sizeof(message), stdin);
 
         // send message to server    
-        if (send(sock, message, sizeof(message), 0) != sizeof(message)) {
-            perror("send failed");
-            return -1;
-        }
+        send_msg(sock, message);
 
-        
 
         if (strcmp(message, "exit\n") == 0) {
             printf("Goodbye\n");
             break;
         }
-    }    
+    }
+    
+    wait(NULL);
+    kill(pid, SIGTERM);
     close(sock);
     return 0;
 

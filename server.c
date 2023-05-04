@@ -4,7 +4,6 @@
 
 int main(int argc, char *argv[]) {
     int serv_sock; /* Socket descriptor for server */    
-    int clients[MAX_CLIENTS];
     struct sockaddr_in serv_add; /* Local address */
     struct sockaddr_in client_add; /* Client address */
     
@@ -41,10 +40,11 @@ int main(int argc, char *argv[]) {
     int num_clients = 0;
     int cl_fd; 
     pid_t pid_recv;
+    int file_descriptors[MAX_CLIENTS];
+    char *mesgs[MAX_CLIENTS];
 
     while(status) {        
-        // wait for a client to connect
-
+        // wait for a client to connect        
                 
         client_add_len = sizeof(client_add);
         if ((cl_fd = accept(serv_sock, (struct sockaddr *) &client_add, &client_add_len)) < 0) {
@@ -52,10 +52,11 @@ int main(int argc, char *argv[]) {
             return -1;
         } else if (num_clients == MAX_CLIENTS) {
             printf("Server is full\n");
-            close(cl_fd);
+            close(cl_fd);  
             continue;
         } else {
-           num_clients++;
+           num_clients++;           
+           send_msg(cl_fd, "Welcome to the server\n");
            printf("Client%d connected\n", num_clients);          
         }
         
@@ -68,10 +69,7 @@ int main(int argc, char *argv[]) {
         } else if (pid_recv == 0){  
             close(serv_sock);              
             while(1) {
-                if (recv(cl_fd, &message, sizeof(message), 0) < 0) {
-                    perror("recv failed");
-                    return -1;
-                }
+                recv_msg(cl_fd, message);
                 if (strcmp(message, "exit\n") == 0) {
                     printf("Client%d disconnected\n", num_clients);
                     num_clients--;    
@@ -79,15 +77,25 @@ int main(int argc, char *argv[]) {
                         printf("Server is empty\n");
                     }
                     close(cl_fd);
-                    break;
-                } 
+                    break;                    
+                }         
+                printf("TT num_clients: %d\n", num_clients);
+                file_descriptors[num_clients - 1] = cl_fd;  
+                mesgs[num_clients - 1] = message;          
                 printf("Client%d: %s\n", num_clients, message);
+                 // send message to other clients
+                for (int i = 0; i < num_clients; i++) {
+                    printf("TT fd in loop %d\n", file_descriptors[i]);
+                    send_msg(file_descriptors[i], mesgs[i]);                    
+                }      
                 
             }                             
-        }      
+        }        
+    
 
     } // while
-
+    wait(NULL); // wait for child process to finish (recv)
+    kill(pid_recv, SIGTERM);
     close(serv_sock);
     return 0;
 

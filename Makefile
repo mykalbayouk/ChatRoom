@@ -5,9 +5,13 @@ LIBFLAGS=$(OLIBSFLAGS)
 
 all: 	client \
 	server \
+	function.o \
 
-client: client.o
-	$(CC) $(CFLAGS) -o $@ client.o $(LIBFLAGS)
+function.o: function.c header.h
+	$(CC) $(CFLAGS) -c function.c $(LIBFLAGS)
+
+client: client.o function.o header.h
+	$(CC) $(CFLAGS) -o $@ client.o function.o $(LIBFLAGS)
 
 server: server.o function.o header.h
 	$(CC) $(CFLAGS) -o $@ server.o function.o $(LIBFLAGS)
