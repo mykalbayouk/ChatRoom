@@ -40,10 +40,24 @@ int main(int argc, char *argv[]) {
     int num_clients = 0;
     int cl_fd; 
     pid_t pid_recv;
-    int file_descriptors[MAX_CLIENTS];
-    char *mesgs[MAX_CLIENTS];
+    int shmid;
+    int *client_fds;
 
-    while(status) {        
+    shmid = shmget(IPC_PRIVATE, MAX_CLIENTS * sizeof(int), IPC_CREAT | 0666);
+        if (shmid == -1) {
+            perror("shmget failed");
+            exit(EXIT_FAILURE);
+        }
+
+        client_fds = shmat(shmid, NULL, 0);
+        if (client_fds == (int*) -1) {
+            perror("shmat failed");
+            exit(EXIT_FAILURE);
+        }
+
+    while(status) { 
+
+        //exit server
         // wait for a client to connect        
                 
         client_add_len = sizeof(client_add);
@@ -59,8 +73,9 @@ int main(int argc, char *argv[]) {
            send_msg(cl_fd, "Welcome to the server\n");
            printf("Client%d connected\n", num_clients);          
         }
-        
-        
+                
+
+        client_fds[num_clients - 1] = cl_fd;
         
         pid_recv = fork();
         if (pid_recv < 0) {
@@ -73,29 +88,47 @@ int main(int argc, char *argv[]) {
                 if (strcmp(message, "exit\n") == 0) {
                     printf("Client%d disconnected\n", num_clients);
                     num_clients--;    
-                    if (num_clients == 0) {                            
-                        printf("Server is empty\n");
-                    }
                     close(cl_fd);
                     break;                    
-                }         
-                printf("TT num_clients: %d\n", num_clients);
-                file_descriptors[num_clients - 1] = cl_fd;  
-                mesgs[num_clients - 1] = message;          
-                printf("Client%d: %s\n", num_clients, message);
-                 // send message to other clients
-                for (int i = 0; i < num_clients; i++) {
-                    printf("TT fd in loop %d\n", file_descriptors[i]);
-                    send_msg(file_descriptors[i], mesgs[i]);                    
-                }      
+                }    
+
+                    for (int i = 0; i < MAX_CLIENTS; i++) {
+                        if (client_fds[i] != cl_fd && client_fds[i] != 0) {
+                            send_msg(client_fds[i], message);
+                        }                                            
+                    }
+                                                
+                    printf("Client%d: %s\n", num_clients, message);
+                    // send message to other clients                    
+                    
+
                 
-            }                             
-        }        
+            }
+            exit(0);                             
+        }
+
+
+
     
 
     } // while
+
+    for (int i = 0; i < num_clients; i++) {
+        close(client_fds[i]); // close all client sockets
+    }
+
+    if (shmdt(client_fds) == -1) {
+        perror("shmdt failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (shmctl(shmid, IPC_RMID, NULL) == -1) {
+        perror("shmctl failed");
+        exit(EXIT_FAILURE);
+    
+    }
+
     wait(NULL); // wait for child process to finish (recv)
-    kill(pid_recv, SIGTERM);
     close(serv_sock);
     return 0;
 

@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     while (1) {
 
          // receive message from server
-        printf("\n> ");
+        
         pid = fork();
         if (pid < 0) {
             perror("fork failed");
@@ -36,12 +36,14 @@ int main(int argc, char *argv[]) {
         } else if (pid == 0) {
             while(1) {
                 char mem[256];
+                printf("\n> ");
                 recv_msg(sock, mem);
                 printf("Server: %s\n", mem);
 
             }            
             exit(0);
-        }        
+        }
+        printf("> ");         
         fgets(message, sizeof(message), stdin);
 
         // send message to server    
@@ -52,10 +54,7 @@ int main(int argc, char *argv[]) {
             printf("Goodbye\n");
             break;
         }
-    }
-    
-    wait(NULL);
-    kill(pid, SIGTERM);
+    }    
     close(sock);
     return 0;
 
