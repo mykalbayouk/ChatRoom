@@ -11,11 +11,23 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <pthread.h>
 
-#define port_c 4444
+#define port_c 9002
+#define BUFF_SIZE 2048
+#define MAX_CLIENTS 10
 
-void send_msg(int sock, char *msg);
-void recv_msg(int sock, char *msg);
-void enter_name(int sock);
+typedef struct{
+	struct sockaddr_in address;
+	int sockfd;
+	int uid;
+	char name[32];
+} client_t;
+
+
+void send_msg(int sock, char *msg, int size);
+void recv_msg(int sock, char *msg, int size);
+void send_to_all(char *msg, int uid);
+void make_nice(char *msg, int size);
 
 #endif /*HEADER.h*/
