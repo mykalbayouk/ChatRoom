@@ -14,4 +14,12 @@ void recv_msg(int sock, char *msg) {
     }
 }
 
+void enter_name(int sock) {
+    char name[256];
+    printf("Enter your name: ");
+    fgets(name, sizeof(name), stdin);
+    name[strlen(name) - 1] = '\0';
+    send_msg(sock, name);
+}
+
 

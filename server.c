@@ -2,6 +2,14 @@
 
 #define MAX_CLIENTS 7
 
+typedef struct{
+    char name[256];   
+} client_s;
+
+void init_client(client_s *cl) {
+    cl->name[0] = '\0';
+}
+
 int main(int argc, char *argv[]) {
     int serv_sock; /* Socket descriptor for server */    
     struct sockaddr_in serv_add; /* Local address */
@@ -42,18 +50,19 @@ int main(int argc, char *argv[]) {
     pid_t pid_recv;
     int shmid;
     int *client_fds;
+    client_s *clients = (client_s*) malloc(MAX_CLIENTS * sizeof(client_s));
 
     shmid = shmget(IPC_PRIVATE, MAX_CLIENTS * sizeof(int), IPC_CREAT | 0666);
-        if (shmid == -1) {
-            perror("shmget failed");
-            exit(EXIT_FAILURE);
-        }
+    if (shmid == -1) {
+        perror("shmget failed");
+        exit(EXIT_FAILURE);
+    }
 
-        client_fds = shmat(shmid, NULL, 0);
-        if (client_fds == (int*) -1) {
-            perror("shmat failed");
-            exit(EXIT_FAILURE);
-        }
+    client_fds = shmat(shmid, NULL, 0);
+    if (client_fds == (int*) -1) {
+        perror("shmat failed");
+        exit(EXIT_FAILURE);
+    }
 
     while(status) { 
 
@@ -69,14 +78,15 @@ int main(int argc, char *argv[]) {
             close(cl_fd);  
             continue;
         } else {
+           init_client(&clients[num_clients]);
            num_clients++;           
-           send_msg(cl_fd, "Welcome to the server\n");
            printf("Client%d connected\n", num_clients);          
         }
                 
 
         client_fds[num_clients - 1] = cl_fd;
         
+
         pid_recv = fork();
         if (pid_recv < 0) {
             perror("fork failed");
@@ -84,22 +94,31 @@ int main(int argc, char *argv[]) {
         } else if (pid_recv == 0){  
             close(serv_sock);              
             while(1) {
-                recv_msg(cl_fd, message);
+                recv_msg(cl_fd, message);              
+                if (clients[num_clients - 1].name[0] == '\0') {
+                    strcpy(clients[num_clients - 1].name, message);
+                    printf("Client%d name: %s\n", num_clients, clients[num_clients - 1].name);
+                    continue;
+                } 
+
                 if (strcmp(message, "exit\n") == 0) {
-                    printf("Client%d disconnected\n", num_clients);
+                    printf("%s disconnected\n",clients[num_clients - 1].name);
                     num_clients--;    
                     close(cl_fd);
                     break;                    
                 }    
 
-                    for (int i = 0; i < MAX_CLIENTS; i++) {
-                        if (client_fds[i] != cl_fd && client_fds[i] != 0) {
-                            send_msg(client_fds[i], message);
-                        }                                            
-                    }
+                for (int i = 0; i < MAX_CLIENTS; i++) {                    
+                    if (client_fds[i] != cl_fd && client_fds[i] != 0) {
+                        printf("fd: %d\n", client_fds[i]);                    
+                        char masg[256];
+                        sprintf(masg, "%s: %s", clients[num_clients - 1].name, message);
+                        send_msg(client_fds[i], masg);
+                    }                                                            
+                }
                                                 
-                    printf("Client%d: %s\n", num_clients, message);
-                    // send message to other clients                    
+                printf("%s: %s\n",clients[num_clients - 1].name, message);
+                // send message to other clients                    
                     
 
                 

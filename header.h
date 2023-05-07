@@ -12,9 +12,10 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-#define port_c 3333
+#define port_c 4444
 
 void send_msg(int sock, char *msg);
 void recv_msg(int sock, char *msg);
+void enter_name(int sock);
 
 #endif /*HEADER.h*/

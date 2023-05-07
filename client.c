@@ -24,25 +24,29 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    enter_name(sock);
+
     pid_t pid;
+
     while (1) {
 
          // receive message from server
-        
+
         pid = fork();
         if (pid < 0) {
             perror("fork failed");
             return -1;
         } else if (pid == 0) {
             while(1) {
-                char mem[256];
-                printf("\n> ");
+                char mem[256];                  
                 recv_msg(sock, mem);
-                printf("Server: %s\n", mem);
-
+                printf("%s", mem);                           
+                putchar('\n');  
             }            
             exit(0);
         }
+        
+        
         printf("> ");         
         fgets(message, sizeof(message), stdin);
 
