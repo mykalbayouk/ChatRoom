@@ -4,36 +4,53 @@ int sock = 0;
 char name[32];
 volatile sig_atomic_t flag = 0;
 
-void catch_ctrl_c_and_exit(int sig) {
+/**
+ * This handles ctrl + c signal
+*/
+void exit_c(int sig) {
     flag = 1;
 }
 
+
+/**
+ * Formats the output
+ */
 void std_out_c() {
   printf("%s", "> ");
   fflush(stdout);
 }
 
+/**
+ * Handles the sending of messages, and the exit command
+ */
 void send_handle(void *arg) {
+    // create message and buffer variables
     char message[BUFF_SIZE];
     char buffer[BUFF_SIZE + 32];
+    // while the flag is not set, send messages
     while (1) {
         std_out_c();
-        fgets(message, BUFF_SIZE, stdin);
-        make_nice(message, BUFF_SIZE);
+        fgets(message, BUFF_SIZE, stdin); // get message
+        make_nice(message, BUFF_SIZE); // format message
         if (strcmp(message, "exit") == 0) {
             send_msg(sock, message, BUFF_SIZE);
             break;
         }
-        sprintf(buffer, "%s: %s\n", name, message);
+        sprintf(buffer, "%s: %s\n", name, message); // format buffer
         send_msg(sock, buffer, BUFF_SIZE + 32);
         bzero(message, BUFF_SIZE);
         bzero(buffer, BUFF_SIZE + 32);
     }
-    catch_ctrl_c_and_exit(2);
+    exit_c(2);
 }
 
+/**
+ * Handles the receiving of messages
+ */
 void recv_handle(void *arg) {
-    char message[BUFF_SIZE];
+    // create message variable
+    char message[BUFF_SIZE]; 
+    // while the flag is not set, receive messages
     while(1) {
         recv_msg(sock, message, BUFF_SIZE);
         printf("%s", message);
@@ -42,14 +59,21 @@ void recv_handle(void *arg) {
     }
 }
 
+/**
+ * Gets the port from the command line
+ */
 int main(int argc, char *argv[]) {
-    struct sockaddr_in serv_add;    
+    struct sockaddr_in serv_add;
+    int port_c;        
 
     // create socket
     if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         perror("socket failed");
         return -1;
     }
+
+    // get port
+    get_port(argc, argv, &port_c);
 
     // construct server address
     memset(&serv_add, 0, sizeof(serv_add)); // zero out structure
@@ -73,6 +97,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // format name
     make_nice(name, 32);
     send_msg(sock, name, 32);
 
@@ -94,6 +119,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // signal handler
     while (1){
 	    if(flag){
 		    printf("\nBye\n");

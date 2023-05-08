@@ -13,7 +13,6 @@
 #include <sys/shm.h>
 #include <pthread.h>
 
-#define port_c 9002
 #define BUFF_SIZE 2048
 #define MAX_CLIENTS 10
 
@@ -24,10 +23,10 @@ typedef struct{
 	char name[32];
 } client_t;
 
-
 void send_msg(int sock, char *msg, int size);
 void recv_msg(int sock, char *msg, int size);
 void send_to_all(char *msg, int uid);
 void make_nice(char *msg, int size);
+void get_port(int argc, char *argv[], int *port);
 
 #endif /*HEADER.h*/
